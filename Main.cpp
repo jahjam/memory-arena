@@ -61,18 +61,7 @@ class Arena
 
     void _setAutoAlign(size_t align)
     {
-        // align needs to be a power of 2 to
-        // to keep things efficient and
-        // hardware friendly
-        //
-        // Binary of 8: 1000
-        // Binary of 8−1: 0111
         // 8 & 7 = 1000 & 0111 = 0000 (Result is 0 → Valid power of two)
-        //
-        // Case 2: alignment = 5 (not a power of two)
-        //
-        // Binary of 5: 0101
-        // Binary of 5−1: 0100
         // 5 & 4 = 0101 & 0100 = 0100 (Result is not 0 → Not a power of two)
         assert((_alignment & (_alignment - 1)) == 0 && "Alignment must be a power of 2");
 
@@ -88,24 +77,8 @@ class Arena
     {
         assert(size < _chunkCapacity && "Size of type larged that size of arena chunk");
 
-        // padding moves unaligned top pointer
-        // to the next aligned place in relation
-        // to the _alignment value
         size_t padding;
-        // we don't need padding if _top
-        // is already multiple of the _alignment
-        if (_top % _alignment == 0)
-        {
-            padding = 0;
-        }
-        else
-        {
-            // _alignment = 8
-            // _top = 13
-            // 13 % 8 = 5
-            // 8 - 5 = 3
-            padding = _alignment - (_top % _alignment);
-        }
+        _top % _alignment == 0 ? padding = 0 : padding = _alignment - (_top % _alignment);
 
         // check out of bounds
         // and add a chunk if gone beyond bounds
@@ -119,27 +92,8 @@ class Arena
             padding = 0;
         }
 
-        // from the _memory pointer, we
-        // move it the desired allocSize
-        // _top = 6;
-        // padding = 2
-        // 0x000 + 8 = 0x008
-        // ptr = the next block of memory
-        // and the first 8 bytes are used
         size_t topAndPadding = _top + padding;
         void* nextPosition = _memoryChain[_curChunk].data + topAndPadding;
-        // move _top to represent the size of
-        // the alloc that has occured
-        // _top = 6
-        // size = 12
-        // padding = 2
-        // 6 + 12 + 2
-        // _top = 20
-        // next time we call to push
-        // padding will have to be applied
-        // we could correct padding here
-        // but it's no different either
-        // do the padding before or after
         _top += padding + size;
         _memoryChunkRemaining = _chunkCapacity - _top;
         return nextPosition;
@@ -150,14 +104,7 @@ class Arena
         assert((alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2");
         size_t padding;
 
-        if (_top % alignment == 0)
-        {
-            padding = 0;
-        }
-        else
-        {
-            padding = alignment - (_top % alignment);
-        }
+        _top % alignment == 0 ? padding = 0 : padding = alignment - (_top % alignment);
 
         if (_top + padding > _chunkCapacity)
         {
@@ -177,7 +124,6 @@ class Arena
     void* _push(size_t size)
     {
         void* ptr = _pushNoZero(size);
-        // zero the memory
         void* alloc = std::memset(ptr, 0, size);
         return alloc;
     };
@@ -254,7 +200,6 @@ class ArenaManager
         }
         else
         {
-            // TODO: make it so you don't have to do two calls
             _arena._setAutoAlign(_size);
             mem = _arena._push(_size);
         }
